@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && mkdir -p /app/data \
     && chown -R einwatch:einwatch /app
 COPY --chown=einwatch:einwatch src ./src
+COPY --chown=einwatch:einwatch public ./public
 USER einwatch
 EXPOSE 8000
 VOLUME ["/app/data"]

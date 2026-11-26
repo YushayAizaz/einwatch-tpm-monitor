@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>EinWatch · Infrastructure overview</title>
+  <link rel="icon" href="/einwatch/favicon.svg">
+  <link rel="stylesheet" href="/einwatch/dashboard.css">
+  <script src="/einwatch/dashboard.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#overview">Skip to dashboard</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="#overview"><span class="brand-mark" aria-hidden="true"></span>EinWatch</a>
+      <nav aria-label="Dashboard sections">
+        <a href="#telemetry">Telemetry</a>
+        <a href="#inventory">Inventory</a>
+        <a href="#incidents">Alerts &amp; SLA</a>
+        <a href="/docs">API docs ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell" id="overview">
+    <div class="intro">
+      <h1>Infrastructure overview</h1>
+      <p id="mode" class="mode" aria-live="polite">Loading monitoring source…</p>
+    </div>
+    <div class="system-error" id="overview-error" hidden>
+      <p role="alert" id="overview-message"></p>
+      <button type="button" id="retry-overview">Retry overview</button>
+    </div>
+
+    <dl class="overview-grid" aria-label="Monitoring summary">
+      <div class="summary"><dt>Inventory assets</dt><dd id="asset-count">—</dd><dd class="summary-detail" id="monitored-count">Waiting for inventory</dd></div>
+      <div class="summary"><dt>Active alerts</dt><dd id="alert-count">—</dd><dd class="summary-detail" id="critical-count">Waiting for tickets</dd></div>
+      <div class="summary"><dt>SLA response compliance</dt><dd id="compliance-rate">—</dd><dd class="summary-detail" id="sla-breakdown">Waiting for SLA results</dd></div>
+    </dl>
+
+    <section class="panel" id="telemetry" aria-labelledby="telemetry-title">
+      <div class="panel-header">
+        <div>
+          <h2 id="telemetry-title">Telemetry history</h2>
+          <p>Select an asset to view its recorded samples.</p>
+        </div>
+        <label class="asset-control">Asset
+          <select id="asset-select" disabled><option>Loading assets…</option></select>
+        </label>
+      </div>
+      <div class="chart-block" id="chart-block" hidden>
+        <h3 id="chart-label">Peak temperature (°C)</h3>
+        <canvas id="chart" role="img" aria-label="Peak temperature chart. Each reading is also in the history table."></canvas>
+      </div>
+      <div class="history-status">
+        <p id="history-message" role="status">Waiting for inventory…</p>
+        <button id="retry-history" type="button" hidden>Retry history</button>
+      </div>
+      <div class="table-wrap" id="history-table" hidden>
+        <table>
+          <caption class="sr-only">Telemetry samples, latest recorded first</caption>
+          <thead><tr><th scope="col">Observed (UTC)</th><th scope="col">Source</th><th scope="col">Peak temp.</th><th scope="col">Node power</th><th scope="col">CPU</th></tr></thead>
+          <tbody id="sample-rows"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button id="newer" type="button" disabled>← Newer</button>
+        <span id="page-number" aria-live="polite">Page 1</span>
+        <button id="older" type="button" disabled>Older →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="inventory" aria-labelledby="inventory-title">
+      <div class="panel-header"><div><h2 id="inventory-title">Hardware inventory</h2><p>Lifecycle dates reflect the asset records.</p></div></div>
+      <p id="inventory-message" class="section-message">Loading inventory…</p>
+      <div class="table-wrap" id="inventory-table" hidden>
+        <table>
+          <caption class="sr-only">Assets and their lifecycle dates</caption>
+          <thead><tr><th scope="col">Asset</th><th scope="col">Status</th><th scope="col">Telemetry source</th><th scope="col">Warranty ends</th><th scope="col">OEM EOL</th><th scope="col">OEM EOSL</th></tr></thead>
+          <tbody id="inventory-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="incidents" aria-labelledby="incidents-title">
+      <div class="panel-header"><div><h2 id="incidents-title">Active alerts and SLA targets</h2><p>Response deadlines are measured against the first acknowledgment.</p></div></div>
+      <p id="alerts-message" class="section-message">Loading alerts…</p>
+      <div class="table-wrap" id="alerts-table" hidden>
+        <table>
+          <caption class="sr-only">Active tickets and response deadlines</caption>
+          <thead><tr><th scope="col">Alert</th><th scope="col">Asset</th><th scope="col">Severity</th><th scope="col">Occurrences</th><th scope="col">Respond by (UTC)</th><th scope="col">SLA status</th></tr></thead>
+          <tbody id="alert-rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <footer class="shell site-footer"><a href="/docs">Interactive API reference ↗</a><a href="https://github.com/YushayAizaz/einwatch-tpm-monitor">Source on GitHub ↗</a></footer>
+</body>
+</html>
