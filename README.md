@@ -22,18 +22,20 @@ flowchart LR
     I --> J[Local Swagger UI and API consumers]
 ```
 
+**Start here:** [Milestone audit and architecture](docs/architecture.md) · [Operations runbook](docs/operations.md) · [Learning and recruiter demo](docs/handover.md) · [Changelog](CHANGELOG.md)
+
 ## Quickstart: Windows PowerShell
 
-Requires Python **3.10+**. Run these commands from this project directory:
+Uses Python **3.12**. Run these commands from this project directory:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe -m src.api
 ```
 
-Open [interactive API documentation](http://127.0.0.1:8000/docs) or [node health](http://127.0.0.1:8000/nodes/health). The service binds to **127.0.0.1:8000**, initializes SQLite, seeds four clearly labeled demo assets, collects a first sample, and then collects every 30 seconds. Stop with Ctrl+C.
+Open the [dashboard](http://127.0.0.1:8000/), [interactive API documentation](http://127.0.0.1:8000/docs) or [node health](http://127.0.0.1:8000/nodes/health). The service binds to **127.0.0.1:8000**, initializes SQLite, seeds four clearly labeled demo assets, collects a first sample, and then collects every 30 seconds. Stop with Ctrl+C.
 
 In a second PowerShell terminal:
 
@@ -54,7 +56,7 @@ To print telemetry without running the API:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements-dev.txt
 .venv/bin/python -m pytest -q
 .venv/bin/python -m src.api
 ```
@@ -113,6 +115,7 @@ SLA compliance counts acknowledged-on-time tickets as `met`, overdue unacknowled
 | PUT | `/assets/{asset_id}` | Create or replace a validated asset record |
 | GET | `/nodes/health` | All inventory records, latest samples and active alert counts |
 | GET | `/nodes/{asset_id}/health` | One asset; unknown asset returns 404 |
+| GET | `/nodes/{asset_id}/telemetry?limit=25&before_id=…` | Indexed [telemetry history](docs/api.md) |
 | POST | `/collect?scenario=normal` | Collect locally and evaluate rules immediately |
 | GET | `/alerts?active_only=true` | Active tickets; set false to include history |
 | POST | `/tickets/{ticket_id}/acknowledge` | Record first response |
@@ -136,7 +139,11 @@ docker run --rm --name einwatch -p 127.0.0.1:8000:8000 -v einwatch-data:/app/dat
 
 The image runs as an unprivileged user. Inside the container Uvicorn binds to `0.0.0.0` so Docker can forward the port; the shown host mapping exposes it only on loopback. A named volume preserves SQLite. Container-visible psutil values reflect the host/kernel and container filesystem visibility; they are not guaranteed to equal container CPU/memory quotas. GPU data remains simulated. No privileged mode, host device access, or remote host connection is required.
 
-The API has no authentication and is intended for local use. Keep the default loopback binding. Dependencies are downloaded during installation/image build; runtime collection has no outbound network calls.
+The local API has no authentication. Keep its default loopback binding. Dependencies are downloaded during installation/image build. Runtime collection has no outbound network calls.
+
+## Hosted demonstration
+
+Vercel runs `app:app`. It serves the same dashboard and read endpoints using isolated synthetic inventory, telemetry, tickets and SLA results as of a fixed UTC timestamp. To run that mode locally, use `python -m uvicorn app:app`. See the [operations runbook](docs/operations.md) for deployment and rollback.
 
 ## Verification and source layout
 
@@ -148,9 +155,11 @@ src/models_and_db.py   Asset validation and SQLite persistence
 src/alert_engine.py    Anomaly rules, ticket creation, response SLA clocks
 src/api.py             FastAPI endpoints and periodic collection
 tests/test_einwatch.py Unit and integration tests
-data/.gitkeep          Runtime database directory
+public/einwatch/       Dashboard assets
+app.py                 Hosted synthetic demonstration entry point
 Dockerfile            Non-root, single-worker container
-requirements.txt      Runtime and test dependencies
+requirements.txt      Pinned runtime dependencies
+requirements-dev.txt  Pinned test dependencies
 ```
 
 Implementation references: [psutil API](https://psutil.io/api/), [FastAPI testing](https://fastapi.tiangolo.com/tutorial/testing/), and [FastAPI lifespan testing](https://fastapi.tiangolo.com/advanced/testing-events/).

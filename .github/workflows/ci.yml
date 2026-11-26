@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pip check
+      - run: python -m pytest -q
+      - run: node --check public/einwatch/dashboard.js
+      - name: Build and smoke-test the local container
+        run: |
+          docker build --tag einwatch-ci .
+          docker run --detach --name einwatch-ci --publish 127.0.0.1:8000:8000 einwatch-ci
+          trap 'docker logs einwatch-ci; docker rm -f einwatch-ci' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8000/health > /tmp/einwatch-ci-health.json; then
+              python -c 'import json; data = json.load(open("/tmp/einwatch-ci-health.json")); assert data["mode"] == "local-only" and data["status"] == "ok"'
+              curl --fail --silent http://127.0.0.1:8000/einwatch/index.html > /dev/null
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1

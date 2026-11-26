@@ -54,8 +54,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_active_rule ON tickets(asset_id,rule)
 
 
 class Database:
-    def __init__(self, path="data/einwatch.sqlite3"):
+    def __init__(self, path="data/einwatch.sqlite3", *, read_only=False):
         self.path = Path(path)
+        self.read_only = read_only
+        if read_only:
+            return
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
             connection.execute("PRAGMA journal_mode=WAL")
@@ -63,7 +66,8 @@ class Database:
 
     @contextmanager
     def connect(self):
-        connection = sqlite3.connect(str(self.path), timeout=30)
+        location = self.path.resolve().as_uri() + "?mode=ro" if self.read_only else str(self.path)
+        connection = sqlite3.connect(location, timeout=30, uri=self.read_only)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys=ON")
         try:
@@ -85,7 +89,12 @@ class Database:
         with self.connect() as connection:
             return [dict(row) for row in connection.execute("SELECT * FROM assets ORDER BY id")]
 
-    def seed_demo(self, today=None):
+    def get_asset(self, asset_id):
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM assets WHERE id = ?", (asset_id,)).fetchone()
+        return dict(row) if row else None
+
+    def seed_demo(self, today=None, *, include_local=True):
         today = today or datetime.now(timezone.utc).date()
         existing = {a["id"] for a in self.assets()}
         examples = [
@@ -95,7 +104,7 @@ class Database:
             ("cisco-demo-01", "Cisco", "UCS C240 (demo)", "8x5xNBD", "inventory_only", 365),
         ]
         for identifier, vendor, model, tier, source, warranty_days in examples:
-            if identifier not in existing:
+            if identifier not in existing and (include_local or source != "local_psutil"):
                 self.put_asset(Asset(id=identifier, vendor=vendor, model=model,
                     serial_number=f"FICTIONAL-{identifier}", sla_tier=tier,
                     warranty_end=today + timedelta(days=warranty_days),
@@ -114,6 +123,20 @@ class Database:
                                      (asset_id,)).fetchone()
         return json.loads(row[0]) if row else None
 
+    def telemetry_page(self, asset_id, limit, before_id=None):
+        query = "SELECT id, payload FROM telemetry WHERE asset_id = ?"
+        params = [asset_id]
+        if before_id is not None:
+            query += " AND id < ?"
+            params.append(before_id)
+        with self.connect() as connection:
+            rows = connection.execute(
+                query + " ORDER BY id DESC LIMIT ?", [*params, limit + 1]
+            ).fetchall()
+        samples = [{**json.loads(row["payload"]), "id": row["id"]} for row in rows[:limit]]
+        next_before_id = rows[limit - 1]["id"] if len(rows) > limit else None
+        return samples, next_before_id
+
     def tickets(self, active_only=True):
         with self.connect() as connection:
             rows = connection.execute("SELECT * FROM tickets" +
@@ -125,6 +148,7 @@ class Database:
             raise ValueError("Unknown ticket action")
         now = (now or datetime.now(timezone.utc)).isoformat()
         with self.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
             row = connection.execute("SELECT * FROM tickets WHERE id=?", (ticket_id,)).fetchone()
             if row is None:
                 raise KeyError(ticket_id)

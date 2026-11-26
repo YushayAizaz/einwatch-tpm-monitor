@@ -1,0 +1,13 @@
+-r requirements.txt
+
+# Test client and runner
+httpx2==2.16.2
+pytest==9.2.0
+
+# Transitive test dependencies
+httpcore2==2.16.2
+iniconfig==2.3.1
+packaging==26.4
+pluggy==1.7.0
+Pygments==2.21.0
+truststore==0.10.5
