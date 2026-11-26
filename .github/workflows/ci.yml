@@ -31,3 +31,17 @@ jobs:
       - run: python -m pip check
       - run: python -m pytest -q
       - run: node --check public/einwatch/dashboard.js
+      - name: Build and smoke-test the local container
+        run: |
+          docker build --tag einwatch-ci .
+          docker run --detach --name einwatch-ci --publish 127.0.0.1:8000:8000 einwatch-ci
+          trap 'docker logs einwatch-ci; docker rm -f einwatch-ci' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8000/health > /tmp/einwatch-ci-health.json; then
+              python -c 'import json; data = json.load(open("/tmp/einwatch-ci-health.json")); assert data["mode"] == "local-only" and data["status"] == "ok"'
+              curl --fail --silent http://127.0.0.1:8000/einwatch/index.html > /dev/null
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1

@@ -17,7 +17,7 @@ python3 -m venv .venv
 .venv/bin/python -m src.api
 ```
 
-Open `http://127.0.0.1:8000/` and `/docs`. The two commands use the same port by default, so stop one before starting the other. The documented Docker command binds to loopback and uses a named volume. Build it with `docker build -t einwatch-tpm-monitor .`. The default writable database is `data/einwatch.sqlite3`, or the path in `EINWATCH_DB`. Never ship that database or its WAL files to the preview. Use SQLite’s backup API or the SQLite shell’s `.backup` for consistent local backups.
+Open `http://127.0.0.1:8000/` and `/docs`. The two commands use the same port by default, so stop one before starting the other. CI also builds the container and checks its local health and dashboard HTML. The documented Docker command binds to loopback and uses a named volume. Build it with `docker build -t einwatch-tpm-monitor .`. The default writable database is `data/einwatch.sqlite3`, or the path in `EINWATCH_DB`. Never ship that database or its WAL files to the preview. Use SQLite’s backup API or the SQLite shell’s `.backup` for consistent local backups.
 
 ## Make and test a change
 
@@ -33,7 +33,7 @@ Dependencies are split across `requirements.txt` and `requirements-dev.txt`. Upd
 
 The Vercel app uses the FastAPI preset, repository root, Python 3.12 and `app.py`. The `public/` files are served by the CDN. Existing local usage still enters through `src.api`. Preview uses Vercel Authentication where configured and needs no environment variables, integrations or paid add-ons.
 
-A production deployment requires owner approval. The repository configuration disables automatic Git deploys from `main`. For review, create or verify a Preview deployment from the PR branch and check the deployment’s source SHA and target. Vercel is configured through the project settings and [Git deployment settings](https://vercel.com/docs/git). If automatic previews are unavailable for a commit author, use the authorized owner’s Vercel connection to deploy the reviewed branch or upload the reviewed source to the Preview target. Confirm Vercel attached the right source to each build.
+A production deployment requires owner approval. The repository configuration disables automatic Git deploys from `main`. The Vercel project also skips builds tagged as production, including any first Git deployment classified that way by Vercel. For review, create or verify a Preview deployment from the PR branch and check the deployment’s source SHA and target. Vercel is configured through the project settings and [Git deployment settings](https://vercel.com/docs/git). If automatic previews are unavailable for a commit author, use the authorized owner’s Vercel connection to deploy the reviewed branch or upload the reviewed source to the Preview target. Confirm Vercel attached the right source to each build.
 
 For a broken preview, give reviewers the last verified immutable deployment URL while investigating the failed build. Create a corrected commit or revert the regression in a new branch and deploy it to Preview. For a future authorized production release, record the deployment ID and commit before promotion. If production needs a rollback, inspect the previous deployment and verify its compatibility with any data migrations. With approval, use [Vercel Instant Rollback](https://vercel.com/docs/instant-rollback) to select the prior deployment, then re-run health, API and UI smoke checks. Rolling back application code does not roll back a database migration.
 

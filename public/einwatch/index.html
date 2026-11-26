@@ -20,7 +20,7 @@
         <a href="#telemetry">Telemetry</a>
         <a href="#inventory">Inventory</a>
         <a href="#incidents">Alerts &amp; SLA</a>
-        <a href="/docs">API docs ↗</a>
+        <a href="/docs">API docs</a>
       </nav>
     </div>
   </header>
@@ -47,9 +47,10 @@
           <h2 id="telemetry-title">Telemetry history</h2>
           <p>Select an asset to view its recorded samples.</p>
         </div>
-        <label class="asset-control">Asset
+        <div class="asset-control">
+          <label for="asset-select">Asset</label>
           <select id="asset-select" disabled><option>Loading assets…</option></select>
-        </label>
+        </div>
       </div>
       <div class="chart-block" id="chart-block" hidden>
         <h3 id="chart-label">Peak temperature (°C)</h3>
@@ -97,6 +98,6 @@
       </div>
     </section>
   </main>
-  <footer class="shell site-footer"><a href="/docs">Interactive API reference ↗</a><a href="https://github.com/YushayAizaz/einwatch-tpm-monitor">Source on GitHub ↗</a></footer>
+  <footer class="shell site-footer"><a href="/docs">Interactive API reference</a><a href="https://github.com/YushayAizaz/einwatch-tpm-monitor">Source on GitHub</a></footer>
 </body>
 </html>
